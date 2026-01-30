@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <style>
+        html, body {
+            zoom: 1 !important;
+            height: 100%;
+            overflow: hidden; /* disable page scrolling */
+        }
+    </style>
+    <title>Block Puzzle Playable</title>
+    <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --bg-color: #00c853;
+            --grid-bg: rgba(255,255,255,0.06);
+            --cell-bg: rgba(255,255,255,0.06);
+            --text-color: #072014;
+            --accent-color: #00e676;
+            --gap: 1vmin; /* Responsive gap */
+        }
+
+        body {
+            background: url('images/Green BG 2000x2000.png') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-color);
+            font-family: 'Mona Sans', 'Helvetica', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            position: relative;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('images/gradient SQUARE.png') no-repeat center center;
+            background-size: cover;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('images/gradient SQUARE.png') no-repeat center center;
+            background-size: cover;
+            transform: scaleY(-1);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Responsive Container */
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            height: 100vh;
+            margin: 0 auto;
+            /* keep top small and bottom moderate to avoid scrolling */
+            padding: clamp(16px, 2vmin, 36px) clamp(10px, 1.5vmin, 20px) clamp(40px, 6vmin, 80px) clamp(10px, 1.5vmin, 20px);
+            /* expose grid sizing variables so dock items can match grid cell size */
+            --grid-size: clamp(300px, 45vmin, 380px);
+            --cell-size: calc((var(--grid-size) - (9 * var(--gap))) / 8);
+            box-sizing: border-box;
+            gap: clamp(0.3rem, 0.6vmin, 0.6rem);
+            position: relative;
+            z-index: 1;
+            overflow: hidden; /* disable container scrolling */
+        }
+
+        /* Landscape Layout Adjustment */
+        @media (orientation: landscape) {
+            #game-container {
+                max-width: 900px;
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        /* Logo styling */
+        .logo {
+            width: min(20vmin, 100px);
+            max-width: 90%;
+            height: auto;
+            object-fit: contain;
+            animation: bounce-in 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            margin-bottom: 0;
+        }
+
+        /* Larger logo on start and game-over screens */
+        #start-screen .logo,
+        #game-over .logo {
+            width: clamp(140px, 26vmin, 420px);
+            max-width: 92%;
+            height: auto;
+            margin-bottom: clamp(8px, 1.6vmin, 18px);
+        }
+
+        @keyframes bounce-in {
+            0% { opacity: 0; transform: scale(0.3) translateY(-30px); }
+            50% { opacity: 1; }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Install CTA styling */
+        .install-cta {
+            width: min(14vmin, 140px);
+            max-width: 85%;
+            height: auto;
+            object-fit: contain;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-top: clamp(0.3rem, 0.5vmin, 0.8rem);
+            animation: pulse-install 3s ease-in-out infinite;
+        }
+        
+        .install-cta:hover {
+            transform: scale(1.04);
+        }
+
+        @keyframes pulse-install {
+            0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0, 230, 118, 0)); }
+            50% { transform: scale(1.01); filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.4)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0, 230, 118, 0)); }
+        }
+
+        /* Badge using the provided image (images/unnamed.jpg) */
+        .badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            background: none;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            width: clamp(110px, 15vmin, 140px);
+            height: clamp(36px, 6vmin, 44px);
+            font-size: clamp(10px, 1.8vmin, 12px);
+            font-weight: 700;
+            font-family: 'Mona Sans', sans-serif;
+            position: relative;
+            background-image: url('images/Gemini_Generated_Image_etcyy5etcyy5etcy (1).png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 12px;
+        }
+
+        /* HUD container for the two badges */
+        .hud-container {
+            display: flex;
+            flex-direction: row;
+            gap: 3vmin;
+            align-items: center;
+            justify-content: space-between;
+            background: transparent;
+            border: none;
+            border-radius: 16px;
+            /* top right bottom left - leave space on left for the vertical banner */
+            padding: 0 clamp(1rem, 3vmin, 2rem) 0 clamp(120px, 12vmin, 200px);
+            width: 100%;
+            box-shadow: none;
+            backdrop-filter: none;
+            animation: fade-slide-in 0.8s ease-out 0.2s backwards;
+            position: fixed;
+            top: clamp(0.8rem, 2vmin, 1.5rem);
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-sizing: border-box;
+        }
+
+        /* Hide left banner on small screens and restore HUD padding */
+        @media (max-width: 600px) {
+            .hey-banner { display: none; }
+            .hud-container { padding-left: clamp(1rem, 3vmin, 2rem); }
+        }
+
+        @keyframes fade-slide-in {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-box {
+            background: transparent;
+            padding: 0;
+            border: none;
+            text-align: center;
+            color: #ffffff;
+            font-family: 'Mona Sans', sans-serif;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            font-size: clamp(9px, 1.6vmin, 11px);
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+            animation: pulse-badge 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* THE GRID */
+        .grid-container {
+            display: grid;
+            /* use explicit cell-size so dock blocks can match grid cells */
+            grid-template-columns: repeat(8, var(--cell-size));
+            grid-template-rows: repeat(8, var(--cell-size));
+            gap: var(--gap);
+            background-color: var(--grid-bg);
+            padding: var(--gap);
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            width: var(--grid-size);
+            height: var(--grid-size);
+            aspect-ratio: 1 / 1;
+            position: relative;
+            animation: slide-up 0.8s ease-out 0.3s backwards;
+            margin: clamp(0.3rem, 0.5vmin, 0.8rem) auto;
+        }
+
+        /* Play area wrapper to keep grid, CTA and dock centered as a group */
+        .play-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            width: max-content;
+            margin: 0 auto;
+            gap: clamp(0.4rem, 1vmin, 0.8rem);
+            position: relative; /* allow absolute HUD placement beside the play area */
+        }
+
+        /* HUD elements placed to the sides of the play-area (vertical center) */
+        .hud-side {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1.2vmin, 12px);
+            align-items: center;
+            z-index: 250;
+            pointer-events: auto;
+        }
+
+        /* place to the left of the play-area */
+        .hud-left {
+            right: calc(100% + clamp(12px, 1.6vmin, 20px));
+        }
+
+        /* place to the right of the play-area */
+        .hud-right {
+            left: calc(100% + clamp(12px, 1.6vmin, 20px));
+        }
+
+        /* On small screens, push HUD to top and make them flow horizontally */
+        @media (max-width: 900px) {
+            .hud-side {
+                position: static;
+                transform: none;
+                flex-direction: row;
+                gap: clamp(12px, 2vmin, 18px);
+                justify-content: center;
+                width: 100%;
+            }
+            .hud-left, .hud-right { left: auto; right: auto; }
+        }
+
+        @keyframes slide-up {
+            0% { opacity: 0; transform: translateY(40px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .cell {
+            width: 100%;
+            height: 100%;
+            background-color: var(--cell-bg);
+            border-radius: 4px;
+            background-size: cover;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.1), inset 0 -1px 2px rgba(0,0,0,0.2);
+            transition: transform 0.15s ease;
+        }
+
+        .cell.highlight {
+            outline: 3px solid rgba(255,255,255,0.25);
+            box-shadow: 0 0 18px rgba(0,200,120,0.2) inset;
+            background-color: rgba(255,255,255,0.04);
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+            filter: brightness(1.2);
+        }
+
+        .cell.clearing {
+            animation: flash 0.3s ease-out;
+        }
+
+        @keyframes flash {
+            0% { filter: brightness(2); background-color: #fff; transform: scale(1.1); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* THE DOCK */
+        .dock {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: clamp(0.8rem, 2vmin, 1.4rem); /* increase spacing between the three draggable picks */
+            height: auto;
+            min-height: auto;
+            width: 100%;
+            max-width: 700px;
+            z-index: 10;
+            flex-wrap: wrap;
+            margin-top: clamp(0.3rem, 0.5vmin, 0.8rem);
+            padding: 0 clamp(10px, 2vmin, 20px);
+            animation: fade-slide-in 0.8s ease-out 0.4s backwards;
+        }
+
+        .block-shape {
+            display: grid;
+            gap: 2px;
+            cursor: pointer;
+            position: relative; 
+            touch-action: none;
+            animation: block-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes block-bounce {
+            0% { opacity: 0; transform: scale(0.5) translateY(-20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Dock / block picker sizes: match the computed grid cell size */
+        .dock .block-cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border-radius: 6px;
+            pointer-events: none;
+            background-size: cover;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.12);
+            margin: 0; /* reset any extra spacing — dock gap will control spacing */
+        }
+
+        /* fallback for other contexts */
+        .block-cell {
+            width: clamp(18px, 3.2vmin, 28px);
+            height: clamp(18px, 3.2vmin, 28px);
+            border-radius: 4px;
+            pointer-events: none;
+            background-size: cover;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        /* Dragging State */
+        .dragging {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.85;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+        }
+
+        /* OVERLAYS (Start & End) */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            /* slightly more transparent so decorative elements show through */
+            background: rgba(20, 30, 25, 0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 5vmin;
+            box-sizing: border-box;
+            animation: fade-in 0.6s ease-out;
+            backdrop-filter: blur(3px);
+        }
+
+        @keyframes fade-in {
+            0% { opacity: 0; backdrop-filter: blur(0px); }
+            100% { opacity: 1; backdrop-filter: blur(3px); }
+        }
+
+        .overlay h1 {
+            font-size: clamp(24px, 8vmin, 48px);
+            margin: 0 0 2vmin 0;
+            text-align: center;
+            color: #ffffff;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.8);
+            animation: text-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes text-pop {
+            0% { opacity: 0; transform: scale(0.8) translateY(-20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .overlay h2 {
+            font-size: clamp(18px, 6vmin, 36px);
+            margin: 0 0 3vmin 0;
+            text-align: center;
+            color: #ffffff;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.8);
+            animation: text-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.1s backwards;
+        }
+
+        .overlay p {
+            font-size: clamp(14px, 4vmin, 20px);
+            margin: 0 0 3vmin 0;
+            text-align: center;
+            color: #ffffff;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.8);
+        }
+
+        .cta-btn {
+            padding: min(4vmin, 15px) min(8vmin, 40px);
+            font-size: clamp(16px, 5vmin, 24px);
+            background: var(--accent-color);
+            border: none;
+            color: #1a221d;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 3vmin;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            animation: pulse 1.5s infinite, pop-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.5s backwards;
+            font-family: 'Mona Sans', sans-serif;
+            transition: transform 0.2s ease;
+        }
+
+        .cta-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 8px 25px rgba(0, 230, 118, 0.5);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+            50% { box-shadow: 0 8px 25px rgba(0, 230, 118, 0.5); }
+            100% { box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        }
+
+        @keyframes pop-in {
+            0% { opacity: 0; transform: scale(0); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- HEYCASH LEFT SIDEBAR BANNER --- */
+        .hey-banner {
+            position: fixed;
+            left: clamp(8px, 1.2vmin, 16px);
+            top: 50%;
+            transform: translateY(-50%);
+            width: clamp(140px, 20vmin, 220px);
+            background: rgba(255,255,255,0.98);
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(8px, 1.2vmin, 12px);
+            padding: clamp(10px, 1.2vmin, 14px);
+            box-sizing: border-box;
+            box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+            z-index: 3000;
+            cursor: pointer;
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+            overflow: hidden; /* keep internal graphics from spilling out */
+        }
+
+        .hey-banner:hover {
+            transform: translateY(-50%) translateX(-4px);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+        }
+
+        .hey-logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fade-slide-in 0.8s ease-out 0.2s backwards;
+        }
+
+        .hey-icon {
+            width: clamp(48px, 8vmin, 64px);
+            height: clamp(48px, 8vmin, 64px);
+            background: transparent;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            animation: rotate-bounce 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .hey-icon img {
+            max-width: 84%;
+            max-height: 84%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        @keyframes rotate-bounce {
+            0% { opacity: 0; transform: scale(0) rotate(-180deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        .hey-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .hey-title {
+            color: #000;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        
+        .hey-subtitle {
+            color: #666;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .card-stack {
+            position: relative;
+            width: clamp(64px, 12vmin, 88px);
+            height: clamp(44px, 8vmin, 56px);
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        
+        .c-card {
+            width: clamp(48px, 8vmin, 64px);
+            height: clamp(34px, 6vmin, 44px);
+            border-radius: 6px;
+            position: absolute;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+            border-top: 1px solid rgba(255,255,255,0.4);
+        }
+
+        .c-card.one {
+            background: #232f3e; 
+            top: 6px; left: 6px;
+            transform: rotate(-12deg) scale(0.98);
+            z-index: 1;
+        }
+        
+        .c-card.two {
+            background: #0070ba;
+            top: 2px; left: calc(50% - 22px);
+            transform: rotate(0deg) scale(0.98);
+            z-index: 2;
+        }
+
+        .c-card.three {
+            background: linear-gradient(45deg, #00D166, #00b85a);
+            top: 6px; right: 6px;
+            transform: rotate(12deg) scale(0.98);
+            z-index: 3;
+        }
+
+        .hey-btn {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            animation: pulse-banner 1.5s infinite;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @keyframes pulse-banner {
+            0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+        }
+
+        /* --- REWARD CARD STYLES --- */
+        .reward-card {
+            background: linear-gradient(135deg, #556f7a 0%, #3d4d56 100%);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            max-width: 320px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: card-pop 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        @keyframes card-pop {
+            0% { opacity: 0; transform: scale(0.6) rotateY(90deg); }
+            100% { opacity: 1; transform: scale(1) rotateY(0deg); }
+        }
+
+        .reward-icon {
+            width: 80px;
+            height: 80px;
+            background: #0070ba;
+            border-radius: 12px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            box-shadow: 0 8px 20px rgba(0,112,186,0.4);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .reward-display {
+            background: linear-gradient(135deg, #e8f0f7 0%, #d4e5f0 100%);
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 340px; /* allow some extra room on wider overlays */
+            min-width: 0; /* allow children to shrink */
+            margin: 20px 0;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            animation: slide-up 0.6s ease-out 0.3s backwards;
+        }
+
+        .reward-display-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .reward-display-logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .reward-display-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .reward-display-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .reward-display-amount {
+            font-size: clamp(20px, 6vmin, 40px);
+            font-weight: 900;
+            color: #1a1a1a;
+            animation: pulse-amount 2s ease-in-out infinite;
+            margin-left: 12px;
+            flex-shrink: 0;
+        }
+
+        /* rotating decorative sun shown for game-over */
+        #game-over .sun-rot {
+            position: absolute;
+            left: 50%;
+            top: 48%;
+            transform: translate(-50%, -50%);
+            width: clamp(260px, 40vmin, 600px);
+            height: clamp(260px, 40vmin, 600px);
+            background: url('images/sun.png') no-repeat center/contain;
+            opacity: 0.98;
+            pointer-events: none;
+            z-index: 0; /* behind overlay content but above the overlay background */
+            animation: spin 12s linear infinite;
+            filter: drop-shadow(0 12px 28px rgba(0,0,0,0.28));
+        }
+
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to   { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* ensure overlay children appear above the sun */
+        #game-over > * { position: relative; z-index: 1; }
+
+        @keyframes pulse-amount {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .reward-text {
+            color: #d0d0d0;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .reward-btn {
+            background: var(--accent-color);
+            color: #1a221d;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 8px 20px rgba(0, 230, 118, 0.4);
+            animation: pulse-reward-btn 1.5s infinite;
+            transition: transform 0.2s ease;
+        }
+
+        .reward-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 12px 30px rgba(0, 230, 118, 0.6);
+        }
+
+        @keyframes pulse-reward-btn {
+            0% { box-shadow: 0 8px 20px rgba(0, 230, 118, 0.4); }
+            50% { box-shadow: 0 12px 30px rgba(0, 230, 118, 0.6); }
+            100% { box-shadow: 0 8px 20px rgba(0, 230, 118, 0.4); }
+        }
+        
+        #game-over { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <img src="images/Logo.png" alt="HeyCash Logo" class="logo">
+        
+        <!-- HUD moved to side of play-area for desktop; responsive fallback will stack on small screens -->
+
+        <div class="play-area">
+            <div class="hud-side hud-left">
+                <div class="badge" role="img" aria-label="Timer badge">
+                    <div class="stat-box">Time: <span id="timer">60</span></div>
+                </div>
+            </div>
+
+            <div class="grid-container" id="grid"></div>
+
+            <img src="images/install-cta.png" alt="Install Game" class="install-cta" onclick="installApp()">
+
+            <div class="hud-side hud-right">
+                <div class="badge" role="img" aria-label="Score badge">
+                    <div class="stat-box">Score: <span id="score">0</span></div>
+                </div>
+            </div>
+
+            <div class="dock" id="dock"></div>
+        </div>
+    </div>
+
+    <div id="start-screen" class="overlay">
+        <img src="images/Logo.png" alt="HeyCash Logo" class="logo">
+        <h1>BLOCK BLAST</h1>
+        <p>Drag blocks to clear lines and earn rewards!</p>
+        <button class="cta-btn" onclick="userInteractStart()">TAP TO PLAY</button>
+    </div>
+
+    <div id="game-over" class="overlay">
+        <div class="sun-rot" aria-hidden="true"></div>
+        <img src="images/Logo.png" alt="HeyCash Logo" class="logo">
+        <h1>Congratulations!</h1>
+        
+        <div class="reward-card">
+            <div class="reward-text" style="margin-bottom: 20px;">You earned</div>
+            
+            <div class="reward-display">
+                <div class="reward-display-left">
+                    <div class="reward-display-logo">
+                        <img src="images/Gemini_Generated_Image_fxhx4nfxhx4nfxhx__1_-removebg-preview.png" alt="PayPal">
+                    </div>
+                    <div class="reward-display-label">PayPal</div>
+                </div>
+                <div class="reward-display-amount">$<span id="final-reward">0</span></div>
+            </div>
+        </div>
+        
+        <button class="reward-btn" onclick="installApp()">CLAIM REWARD</button>
+    </div>
+
+    <script>
+        /* =========================================
+           1. ASSET CONFIGURATION (User Editable)
+           ========================================= 
+           Paste your Base64 strings inside the quotes.
+           If left empty (''), it will use the fallback HEX color.
+        */
+        
+        const ASSETS = {
+            // Background Image (Optional)
+            backgroundImage: '', 
+
+            // Block Textures (Mapped to the 5 colors)
+            // Example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+            textures: [
+                'images/Logo2 - Small.png',
+                'images/Logo2 - Small.png',
+                'images/Logo2 - Small.png',
+                'images/Logo2 - Small.png',
+                'images/Logo2 - Small.png'
+            ]
+        };
+
+        const INSTALL_URL = "https://google.com"; // REPLACE WITH YOUR APP STORE URL
+
+        /* =========================================
+           2. MRAID & AD LOGIC
+           ========================================= */
+        
+        let mraidReady = false;
+
+        function initMraid() {
+            if (typeof mraid === 'undefined') {
+                console.log("MRAID not found - Running in standalone mode");
+                return;
+            }
+            
+            if (mraid.getState() === 'loading') {
+                mraid.addEventListener('ready', () => {
+                    mraidReady = true;
+                    console.log("MRAID Ready");
+                });
+            } else {
+                mraidReady = true;
+            }
+        }
+
+        function installApp() {
+            if (typeof mraid !== 'undefined' && mraidReady) {
+                mraid.open(INSTALL_URL);
+            } else {
+                window.open(INSTALL_URL, '_blank');
+            }
+        }
+
+        initMraid();
+
+        /* =========================================
+           PREVENT ZOOM ON DESKTOP
+           ========================================= */
+        
+        // Prevent keyboard zoom (Ctrl/Cmd +, -, 0)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0' || e.key === '=')) {
+                e.preventDefault();
+            }
+        }, false);
+
+        // Prevent mouse wheel zoom (Ctrl/Cmd + scroll)
+        document.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Prevent pinch zoom on trackpad
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        }, false);
+
+        // Reset zoom to 100% on load and periodically
+        window.addEventListener('load', () => {
+            document.body.style.zoom = '1';
+        });
+
+        window.addEventListener('resize', () => {
+            document.body.style.zoom = '1';
+        });
+
+        /* =========================================
+           3. GAME LOGIC
+           ========================================= */
+
+        const GRID_SIZE = 8;
+        const INITIAL_TIME = 25;
+        
+        // Colors (Fallback if no Base64 texture provided)
+        const COLORS = [
+            '#bf616a', '#ebcb8b', '#a3be8c', '#b48ead', '#88c0d0'
+        ];
+
+        // Standard Tetris-ish shapes - Simplified for easier scoring
+        const SHAPES = [
+            [[1]], [[1]], [[1,1]], [[1,1]], [[1,1,1]], [[1,1,1]], 
+            [[1,1,1]], [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]]
+        ];
+
+        // Restricted set for the dock: only T and L-shaped pieces (various rotations)
+        const DOCK_SHAPES = [
+            // T variants
+            [[1,1,1],[0,1,0]],
+            [[0,1,0],[1,1,1]],
+            [[1,0],[1,1],[1,0]],
+            [[0,1],[1,1],[0,1]],
+            // L variants (and mirrored)
+            [[1,0],[1,0],[1,1]],
+            [[0,1],[0,1],[1,1]],
+            [[1,1],[1,0],[1,0]],
+            [[1,1],[0,1],[0,1]]
+        ];
+
+        // Additional common forms: 2x2 square, 3-long line (horiz/vert), small 3-block Ls
+        // These match the illustrative forms the user provided
+        DOCK_SHAPES.push(
+            [[1,1],[1,1]],      // 2x2 square
+            [[1,1,1]],           // 3-long horizontal
+            [[1],[1],[1]],      // 3-long vertical
+            [[1,1,0],[0,1,1]],  // small zig-zag (S/Z)
+            [[1,0],[1,0],[1,0]] // 3x1 vertical fallback (redundant but safe)
+        );
+
+        let gridState = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
+
+        // Pre-fill some blocks so there are already pieces in the grid on load
+        // All pre-filled cells use texture index 2 (which maps to Logo2 - Small.png)
+        // Pre-fill inspired by reference: top blocks on left + right columns
+        const PRE_FILL = [];
+        // fill rows 0..2 on columns 0..2 and 5..7
+        for (let r=0; r<=2; r++) {
+            for (let c=0; c<=2; c++) PRE_FILL.push([r,c]);
+            for (let c=5; c<=7; c++) PRE_FILL.push([r,c]);
+        }
+        // add a small shape near row 3 center-top
+        PRE_FILL.push([3,3],[3,4]);
+        PRE_FILL.forEach(([r,c]) => { gridState[r][c] = 2; });
+        let score = 0;
+        let timeLeft = INITIAL_TIME;
+        let timerInterval;
+        let isGameActive = false;
+
+        const gridEl = document.getElementById('grid');
+        const dockEl = document.getElementById('dock');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+
+        // Apply Background Asset if present
+        if(ASSETS.backgroundImage) {
+            document.body.style.backgroundImage = `url('${ASSETS.backgroundImage}')`;
+            document.body.style.backgroundSize = 'cover';
+        }
+
+        function initGame() {
+            createGrid();
+            updateGridVisuals(); // reflect pre-filled cells immediately
+        }
+
+        // Called only after user clicks "Tap to Play"
+        function userInteractStart() {
+            document.getElementById('start-screen').style.display = 'none';
+            isGameActive = true;
+            spawnBlocks();
+            startTimer();
+        }
+
+        function createGrid() {
+            gridEl.innerHTML = '';
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function createBlockElement(matrix) {
+            const colorIdx = Math.floor(Math.random() * COLORS.length);
+            const color = COLORS[colorIdx];
+            const texture = ASSETS.textures[colorIdx];
+
+            const container = document.createElement('div');
+            container.classList.add('block-shape');
+            container.style.gridTemplateColumns = `repeat(${matrix[0].length}, 1fr)`;
+            container.style.gridTemplateRows = `repeat(${matrix.length}, 1fr)`;
+            
+            matrix.forEach(row => {
+                row.forEach(val => {
+                    const cell = document.createElement('div');
+                    if (val) {
+                        cell.classList.add('block-cell');
+                        if (texture) {
+                            cell.style.backgroundImage = `url('${texture}')`;
+                            cell.style.backgroundColor = 'transparent';
+                        } else {
+                            cell.style.backgroundColor = color;
+                        }
+                    }
+                    container.appendChild(cell);
+                });
+            });
+
+            container.matrix = matrix;
+            container.colorIdx = colorIdx; // Store index to retrieve texture later
+            addDragLogic(container);
+            return container;
+        }
+
+        function spawnBlocks() {
+            dockEl.innerHTML = '';
+            for(let i=0; i<3; i++) {
+                const shape = DOCK_SHAPES[Math.floor(Math.random() * DOCK_SHAPES.length)];
+                dockEl.appendChild(createBlockElement(shape));
+            }
+        }
+
+        /* --- DRAG SYSTEM --- */
+        function addDragLogic(el) {
+            let startX, startY;
+
+            const onDown = (e) => {
+                if(!isGameActive) return;
+                e.preventDefault();
+                
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const rect = el.getBoundingClientRect();
+                // Visual Prep: pin to viewport and set initial position
+                el.classList.add('dragging');
+                el.style.position = 'fixed';
+                el.style.left = rect.left + 'px';
+                el.style.top = rect.top + 'px';
+
+                // Scale calculation: Match grid cell size
+                const gridCellSize = gridEl.firstElementChild.getBoundingClientRect().width;
+                const blockCell = el.querySelector('.block-cell');
+                const blockCellSize = blockCell ? blockCell.getBoundingClientRect().width : rect.width;
+                const scale = gridCellSize / blockCellSize;
+
+                // Apply sizing directly (avoid transform scale which changes pointer math)
+                el.style.width = (rect.width * scale) + 'px';
+                el.style.height = (rect.height * scale) + 'px';
+                el.style.transform = '';
+
+                // Record pointer offset relative to element top-left (scaled to new size)
+                startX = (clientX - rect.left) * scale;
+                startY = (clientY - rect.top) * scale;
+
+                moveAt(clientX, clientY);
+
+                // Bind Move/Up
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('touchmove', onMove, {passive: false});
+                document.addEventListener('mouseup', onUp);
+                document.addEventListener('touchend', onUp);
+            };
+
+            const moveAt = (x, y) => {
+                el.style.left = (x - startX) + 'px';
+                el.style.top = (y - startY) + 'px';
+            };
+
+            const onMove = (e) => {
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                moveAt(clientX, clientY);
+                // store last pointer position for touchend/mouseup fallbacks
+                window._lastPointerX = clientX;
+                window._lastPointerY = clientY;
+                // show potential placement while dragging
+                try {
+                    const gridRect = gridEl.getBoundingClientRect();
+                    const cellRect = gridEl.firstElementChild.getBoundingClientRect();
+                    const cellSize = cellRect.width;
+                    const gap = parseFloat(getComputedStyle(gridEl).gap);
+                    const padding = parseFloat(getComputedStyle(gridEl).padding);
+                    const totalCellSize = cellSize + gap;
+                    // Use the pointer coordinates (clientX/clientY) for center calculation
+                    const centerX = clientX - gridRect.left - padding;
+                    const centerY = clientY - gridRect.top - padding;
+                    const baseCol = Math.round((centerX - cellSize*0.5) / totalCellSize);
+                    const baseRow = Math.round((centerY - cellSize*0.5) / totalCellSize);
+                    // find first valid in neighborhood and highlight
+                    let shown = false;
+                    for (let dr=-1; dr<=1 && !shown; dr++){
+                        for (let dc=-1; dc<=1 && !shown; dc++){
+                            const r = baseRow + dr;
+                            const c = baseCol + dc;
+                            if (canPlace(el.matrix, r, c)){
+                                showHighlight(el.matrix, r, c);
+                                shown = true;
+                            }
+                        }
+                    }
+                    if (!shown) clearHighlights();
+                } catch (err){}
+            };
+
+            // Track and show possible placement highlight while moving
+            let lastHighlight = [];
+            const clearHighlights = () => {
+                lastHighlight.forEach(idx => {
+                    if (gridEl.children[idx]) gridEl.children[idx].classList.remove('highlight');
+                });
+                lastHighlight = [];
+            };
+
+            const showHighlight = (matrix, startRow, startCol) => {
+                clearHighlights();
+                if (!matrix) return;
+                for (let r=0;r<matrix.length;r++){
+                    for (let c=0;c<matrix[0].length;c++){
+                        if (matrix[r][c]===1){
+                            const gr = startRow + r;
+                            const gc = startCol + c;
+                            if (gr>=0 && gr<GRID_SIZE && gc>=0 && gc<GRID_SIZE){
+                                const idx = gr*GRID_SIZE + gc;
+                                gridEl.children[idx].classList.add('highlight');
+                                lastHighlight.push(idx);
+                            }
+                        }
+                    }
+                }
+            };
+
+            const onUp = (e) => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                document.removeEventListener('touchend', onUp);
+
+                el.classList.remove('dragging');
+                el.style.transform = '';
+
+                // Hit Test with tolerance & neighborhood search
+                const gridRect = gridEl.getBoundingClientRect();
+                const cellRect = gridEl.firstElementChild.getBoundingClientRect();
+                const cellSize = cellRect.width;
+                const gap = parseFloat(getComputedStyle(gridEl).gap);
+                const padding = parseFloat(getComputedStyle(gridEl).padding);
+                const totalCellSize = cellSize + gap;
+
+                // Use the event pointer (or last known position) to compute center relative to grid
+                const clientX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : (e.clientX || (window._lastPointerX || 0));
+                const clientY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : (e.clientY || (window._lastPointerY || 0));
+                const centerX = clientX - gridRect.left - padding;
+                const centerY = clientY - gridRect.top - padding;
+
+                // Approximate base row/col
+                let baseCol = Math.round((centerX - cellSize*0.5) / totalCellSize);
+                let baseRow = Math.round((centerY - cellSize*0.5) / totalCellSize);
+
+                // Search small neighborhood for a valid placement (more tolerant)
+                let placed = false;
+                let foundRow = 0, foundCol = 0;
+                for (let dr = -1; dr <= 1 && !placed; dr++){
+                    for (let dc = -1; dc <= 1 && !placed; dc++){
+                        const r = baseRow + dr;
+                        const c = baseCol + dc;
+                        if (canPlace(el.matrix, r, c)){
+                            placeBlock(el.matrix, r, c, el.colorIdx);
+                            placed = true;
+                            foundRow = r; foundCol = c;
+                        }
+                    }
+                }
+
+                clearHighlights();
+
+                if (placed) {
+                    el.remove();
+                    // Spawn one new block to maintain 3 pieces in dock
+                    const newShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+                    dockEl.appendChild(createBlockElement(newShape));
+                } else {
+                    // Reset position
+                    el.style.position = '';
+                    el.style.left = '';
+                    el.style.top = '';
+                    el.style.width = '';
+                    el.style.height = '';
+                }
+            };
+
+            el.addEventListener('mousedown', onDown);
+            el.addEventListener('touchstart', onDown, {passive: false});
+        }
+
+        function canPlace(matrix, startRow, startCol) {
+            for (let r = 0; r < matrix.length; r++) {
+                for (let c = 0; c < matrix[0].length; c++) {
+                    if (matrix[r][c] === 1) {
+                        const gridR = startRow + r;
+                        const gridC = startCol + c;
+                        if (gridR < 0 || gridR >= GRID_SIZE || 
+                            gridC < 0 || gridC >= GRID_SIZE || 
+                            gridState[gridR][gridC] !== null) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        function placeBlock(matrix, startRow, startCol, colorIdx) {
+            for (let r = 0; r < matrix.length; r++) {
+                for (let c = 0; c < matrix[0].length; c++) {
+                    if (matrix[r][c] === 1) {
+                        gridState[startRow + r][startCol + c] = colorIdx;
+                    }
+                }
+            }
+            score += 25;
+            updateGridVisuals();
+            checkLines();
+            scoreEl.innerText = score;
+        }
+
+        function updateGridVisuals() {
+            const cells = gridEl.children;
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const idx = r * GRID_SIZE + c;
+                    const cell = cells[idx];
+                    const val = gridState[r][c];
+
+                    if (val !== null) {
+                        const texture = ASSETS.textures[val];
+                        const color = COLORS[val];
+                        if (texture) {
+                            cell.style.backgroundImage = `url('${texture}')`;
+                            cell.style.backgroundColor = 'transparent';
+                        } else {
+                            cell.style.backgroundColor = color;
+                            cell.style.backgroundImage = '';
+                        }
+                        cell.style.boxShadow = 'inset 0 0 5px rgba(0,0,0,0.3)';
+                    } else {
+                        cell.style.backgroundColor = ''; // Reset
+                        cell.style.backgroundImage = '';
+                        cell.style.boxShadow = '';
+                    }
+                }
+            }
+        }
+
+        function checkLines() {
+            let rowsToClear = [], colsToClear = [];
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                if (gridState[r].every(v => v !== null)) rowsToClear.push(r);
+            }
+            for (let c = 0; c < GRID_SIZE; c++) {
+                let full = true;
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    if (gridState[r][c] === null) full = false;
+                }
+                if (full) colsToClear.push(c);
+            }
+
+            if (rowsToClear.length > 0 || colsToClear.length > 0) {
+                const cells = gridEl.children;
+                // Animate
+                rowsToClear.forEach(r => {
+                    for(let c=0; c<GRID_SIZE; c++) cells[r*GRID_SIZE + c].classList.add('clearing');
+                });
+                colsToClear.forEach(c => {
+                    for(let r=0; r<GRID_SIZE; r++) cells[r*GRID_SIZE + c].classList.add('clearing');
+                });
+
+                setTimeout(() => {
+                    rowsToClear.forEach(r => gridState[r].fill(null));
+                    colsToClear.forEach(c => {
+                        for(let r=0; r<GRID_SIZE; r++) gridState[r][c] = null;
+                    });
+                    
+                    Array.from(cells).forEach(cell => cell.classList.remove('clearing'));
+                    updateGridVisuals();
+                }, 300);
+
+                const lines = rowsToClear.length + colsToClear.length;
+                score += lines * 100;
+                timeLeft += lines * 2;
+                scoreEl.innerText = score;
+                timerEl.innerText = timeLeft;
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (!isGameActive) return;
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            isGameActive = false;
+            clearInterval(timerInterval);
+            const rewardAmount = Math.floor(score / 10);
+            document.getElementById('final-reward').innerText = rewardAmount;
+            document.getElementById('game-over').style.display = 'flex';
+        }
+
+        // Initialize board (but not game) on load
+        initGame();
+
+    </script>
+
+    <!-- HeyCash Banner -->
+    <div class="hey-banner" onclick="installApp()">
+        <div class="hey-logo-area">
+            <div class="hey-icon">
+                <img src="images/Logo2.png" alt="HeyCash Logo">
+            </div>
+            <div class="hey-text">
+                <div class="hey-title">HeyCash</div>
+                <div class="hey-subtitle">Get Rewards</div>
+            </div>
+        </div>
+        
+        <div class="card-stack">
+            <div class="c-card one"></div>
+            <div class="c-card two"></div>
+            <div class="c-card three"></div>
+        </div>
+        
+        <button class="hey-btn">Install</button>
+    </div>
+
+</body>
+</html>
